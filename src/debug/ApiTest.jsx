@@ -5,6 +5,7 @@ import GameLog from "../components/GameLog";
 import GameLogsTable from "../components/gameLogs/GameLogsTable";
 import GameLogPaginationControls from "../components/gameLogs/GameLogPaginationControls";
 import PlayerAveragesTable from "../components/playerAverages/PlayerAveragesTable";
+import HeatCheck from "../components/heatCheck/heatCheck";
 
 function ApiTest() {
     const [playerGames, setPlayerGames] = useState([]); // games for player
@@ -12,7 +13,9 @@ function ApiTest() {
     const [playerGamesPageData, setPlayerGamesPageData] = useState(null); // full page data for game logs
     const [playerAverages, setPlayerAverages] = useState(null); // player averages data
     const [error, setError] = useState(null); // each useEffect should have unique error state
-    const [loading, setLoading] = useState(true); // each useEffect should have unique loading state
+    const [loading, setLoading] = useState(false); // each useEffect should have unique loading state
+    const [searchInput, setSearchInput] = useState(""); // raw search query input
+    const [searchQuery, setSearchQuery] = useState(null); // processed search query
 
     // gets all games
     // useEffect(() => {
@@ -32,15 +35,45 @@ function ApiTest() {
     // }
     // , []);
 
+    const parsePlayerName = () => {
+        const parts = searchInput.trim().split(/\s+/);
+
+        return {
+            first: parts[0] || "",
+            last: parts.slice(1).join(" ") || ""
+        }
+
+    }
+
+    const handleSearch = (e) => {
+        // event handlers transform input
+        e.preventDefault();
+
+        const parsed = parsePlayerName(); // returns object with first and last name
+
+        if (!parsed.first || !parsed.last) {
+            alert("Please enter both first and last name.");
+            return;
+        }
+
+        setSearchQuery(parsed)
+        setPlayerGamesPage(0); // reset to first page on new search
+    }
+
     // gets all games by player with pagination
     useEffect(() => {
+        if (!searchQuery) return; // dont run on startup
+
         const loadGamesByPlayer = async () => {
             setLoading(true);
             setError(null);
 
             try {
-                const gamesByPlayer = await getAllGamesByPlayer(playerGamesPage);
-                console.log(gamesByPlayer);
+                const { first, last } = searchQuery;
+                console.log("Getting player game logs for " + first + " " + last);
+                // pass in object with first, last, and page
+                const gamesByPlayer = await getAllGamesByPlayer({ first, last, page: playerGamesPage });
+                //console.log(gamesByPlayer);
                 setPlayerGames(gamesByPlayer.items);
                 setPlayerGamesPageData({
                     pageNumber: gamesByPlayer.page,
@@ -60,17 +93,22 @@ function ApiTest() {
 
         loadGamesByPlayer();
     }
-    , [playerGamesPage]);
+    , [searchQuery, playerGamesPage]);
 
     // get player averages on startup (lebron)
     useEffect(() => {
+        if (!searchQuery) return; // dont run on startup
+
         const loadPlayerAverages = async () => {
             setLoading(true);
             setError(null);
 
             try {
-                const playerAveragesResponse = await getPlayerAverages();
-                console.log(playerAveragesResponse);
+                const { first, last } = searchQuery;
+                console.log("Getting player averages for " + first + " " + last); 
+                // pass in object with first and last name
+                const playerAveragesResponse = await getPlayerAverages({ first, last });
+                //console.log(playerAveragesResponse);
                 setPlayerAverages(playerAveragesResponse);
             } catch (error) {
                 setError(error);
@@ -82,27 +120,47 @@ function ApiTest() {
         }
 
         loadPlayerAverages();
-    }, []);
-
-
-    if (loading) return <p>Loading...</p>;
-    if (error) return <p>{error.message}</p>;
-    if (!playerGamesPageData) return null;
+    }, [searchQuery]);
 
     return (
         <div className="api-test">
-            <PlayerAveragesTable averages={playerAverages} />
-            <br />
-            <GameLogsTable gameLogs={playerGames} />
-            <GameLogPaginationControls 
-                page={playerGamesPage}
-                totalPages={playerGamesPageData.totalPages}
-                totalItems={playerGamesPageData.totalItems}
-                isFirst={playerGamesPageData.first}
-                isLast={playerGamesPageData.last}
-                onNext={() => setPlayerGamesPage(prev => prev + 1)}
-                onPrev={() => setPlayerGamesPage(prev => prev - 1)}
-            />
+            <form onSubmit={handleSearch} className="search-form">
+                <input
+                    type="text"
+                    placeholder="Search player by name..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)} // on change we update search query state
+                />
+                <button className="search-button" type="submit">Search</button>
+            </form>
+
+            <HeatCheck />
+
+            {error && <p className="error-message">Error: {error.message}</p>}
+            {loading && <p className="loading-message">Loading...</p>}
+
+            {searchQuery && playerAverages && !error && !loading && (
+                <>
+                    <PlayerAveragesTable averages={playerAverages} />
+                    <br />
+                </>
+            )}
+
+            {searchQuery && playerGamesPageData && !error && !loading && (
+                <>
+                    <GameLogsTable gameLogs={playerGames} />
+                    <GameLogPaginationControls 
+                        page={playerGamesPage}
+                        totalPages={playerGamesPageData.totalPages}
+                        totalItems={playerGamesPageData.totalItems}
+                        isFirst={playerGamesPageData.first}
+                        isLast={playerGamesPageData.last}
+                        onNext={() => setPlayerGamesPage(prev => prev + 1)}
+                        onPrev={() => setPlayerGamesPage(prev => prev - 1)}
+                    />
+                </>
+            )}
+            
         </div>
     );
 }

@@ -9,8 +9,9 @@ export const getAllGames = async () => {
   return parsePage(data);
 };
 
-export const getAllGamesByPlayer = async (page) => {
-  //console.log("Fetching games for player LeBron James, page:", page);
-  const data = await httpGet(`/search?first=Lebron&last=James&page=${page}`) // CHECKME
+export const getAllGamesByPlayer = async ({first, last, page}) => {
+  // encode first name, last name, and page
+  const params = new URLSearchParams({first, last, page});
+  const data = await httpGet(`/search?${params}`) // CHECKME
   return parsePage(data);
 };
