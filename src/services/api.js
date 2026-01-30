@@ -12,6 +12,6 @@ export const getAllGames = async () => {
 export const getAllGamesByPlayer = async ({first, last, page}) => {
   // encode first name, last name, and page
   const params = new URLSearchParams({first, last, page});
-  const data = await httpGet(`/search?${params}`) // CHECKME
+  const data = await httpGet(`/search?${params.toString()}`) // CHECKME
   return parsePage(data);
 };

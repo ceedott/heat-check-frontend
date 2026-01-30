@@ -6,12 +6,14 @@ import GameLogsTable from "../components/gameLogs/GameLogsTable";
 import GameLogPaginationControls from "../components/gameLogs/GameLogPaginationControls";
 import PlayerAveragesTable from "../components/playerAverages/PlayerAveragesTable";
 import HeatCheck from "../components/heatCheck/heatCheck";
+import { getHeatCheck } from "../services/heatCheckApi";
 
 function ApiTest() {
     const [playerGames, setPlayerGames] = useState([]); // games for player
     const [playerGamesPage, setPlayerGamesPage] = useState(0); // page number for game log pagination
     const [playerGamesPageData, setPlayerGamesPageData] = useState(null); // full page data for game logs
     const [playerAverages, setPlayerAverages] = useState(null); // player averages data
+    const [playerHeatCheck, setPlayerHeatCheck] = useState(null); // player heat check data
     const [error, setError] = useState(null); // each useEffect should have unique error state
     const [loading, setLoading] = useState(false); // each useEffect should have unique loading state
     const [searchInput, setSearchInput] = useState(""); // raw search query input
@@ -60,7 +62,7 @@ function ApiTest() {
         setPlayerGamesPage(0); // reset to first page on new search
     }
 
-    // gets all games by player with pagination
+    // gets all games by player with pagination after search or page change
     useEffect(() => {
         if (!searchQuery) return; // dont run on startup
 
@@ -95,7 +97,7 @@ function ApiTest() {
     }
     , [searchQuery, playerGamesPage]);
 
-    // get player averages on startup (lebron)
+    // get player averages after search
     useEffect(() => {
         if (!searchQuery) return; // dont run on startup
 
@@ -122,6 +124,29 @@ function ApiTest() {
         loadPlayerAverages();
     }, [searchQuery]);
 
+    // get player heat check on startup 
+    useEffect(() => {
+        if (!searchQuery) return; // dont run on startup
+
+        const loadPlayerHeatCheck = async () => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const { first, last } = searchQuery;
+                const heatCheckResponse = await getHeatCheck({ first, last });
+                setPlayerHeatCheck(heatCheckResponse);
+            } catch (error) {
+                setError(error);
+                console.error("Error fetching player heat check:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadPlayerHeatCheck();
+    }, [searchQuery])
+
     return (
         <div className="api-test">
             <form onSubmit={handleSearch} className="search-form">
@@ -134,15 +159,16 @@ function ApiTest() {
                 <button className="search-button" type="submit">Search</button>
             </form>
 
-            <HeatCheck />
-
             {error && <p className="error-message">Error: {error.message}</p>}
             {loading && <p className="loading-message">Loading...</p>}
+
+            {searchQuery && playerHeatCheck && !error && !loading && (
+                <HeatCheck heatLevel={playerHeatCheck}/>
+            )}
 
             {searchQuery && playerAverages && !error && !loading && (
                 <>
                     <PlayerAveragesTable averages={playerAverages} />
-                    <br />
                 </>
             )}
 

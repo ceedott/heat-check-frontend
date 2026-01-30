@@ -1,7 +1,7 @@
-function HeatCheck() {
+function HeatCheck({heatLevel}) {
     return (
         <>
-            <p>Heat Check Component</p>
+            <div className="heat-level">{heatLevel}</div>
         </>
     )
 }
