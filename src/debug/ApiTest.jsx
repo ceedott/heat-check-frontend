@@ -7,7 +7,8 @@ import GameLogPaginationControls from "../components/gameLogs/GameLogPaginationC
 import PlayerAveragesTable from "../components/playerAverages/PlayerAveragesTable";
 import HeatCheck from "../components/heatCheck/heatCheck";
 import { getHeatCheck } from "../services/heatCheckApi";
-import RollingAveragesChart from "../components/playerAverages/RollingAveragesChart";
+import RollingAveragesChart from "../components/rollingAverages/RollingAveragesChart";
+import ChartControls from "../components/rollingAverages/ChartControls";
 
 import { Chart as ChartJS } from 'chart.js/auto';
 import { Line } from 'react-chartjs-2';
@@ -19,6 +20,8 @@ function ApiTest() {
     const [playerAverages, setPlayerAverages] = useState(null); // player averages data
     const [playerHeatCheck, setPlayerHeatCheck] = useState(null); // player heat check data
     const [playerRollingAverages, setPlayerRollingAverages] = useState(null); // player rolling averages data
+    const [rollingAvgStat, setRollingAvgStat] = useState("PTS"); // stat type for rolling averages
+    const [rollingAvgNumGames, setRollingAvgNumGames] = useState(10); // number of games for rolling averages
     const [error, setError] = useState(null); // each useEffect should have unique error state
     const [loading, setLoading] = useState(false); // each useEffect should have unique loading state
     const [searchInput, setSearchInput] = useState(""); // raw search query input
@@ -162,9 +165,9 @@ function ApiTest() {
 
             try {
                 const { first, last } = searchQuery;
-                const tempStat = "PTS"; // hardcoded for now, could add dropdown to select stat
-                const tempGames = 10; // hardcoded for now, could add input to select number of games
-                const rollingAveragesResponse = await getPlayerRollingAverages({ first, last, stat: tempStat, games: tempGames });
+                //const tempStat = "PTS"; // hardcoded for now, could add dropdown to select stat
+                //const tempGames = 10; // hardcoded for now, could add input to select number of games
+                const rollingAveragesResponse = await getPlayerRollingAverages({ first, last, stat: rollingAvgStat, games: rollingAvgNumGames });
                 setPlayerRollingAverages(rollingAveragesResponse);
                 console.log("Rolling averages response:", rollingAveragesResponse);
             } catch (error) {
@@ -176,7 +179,7 @@ function ApiTest() {
         }
 
         loadPlayerRollingAverages();
-    }, [searchQuery])
+    }, [searchQuery, rollingAvgStat, rollingAvgNumGames])
 
     return (
         <div className="api-test">
@@ -219,7 +222,10 @@ function ApiTest() {
             )}
 
             {searchQuery && playerRollingAverages && !error && !loading && (
-                <RollingAveragesChart rollingAverages={playerRollingAverages} numGames={playerRollingAverages.length} />
+                <>
+                    <RollingAveragesChart rollingAverages={playerRollingAverages} numGames={playerRollingAverages.length} statType={rollingAvgStat} />
+                    <ChartControls statType={rollingAvgStat} setStatType={setRollingAvgStat} numGames={rollingAvgNumGames} setNumGames={setRollingAvgNumGames}/>
+                </>
             )}
             
         </div>
