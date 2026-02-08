@@ -8,3 +8,10 @@ export const getPlayerAverages = async ({ first, last }) => {
     const response = await httpGet(`/averages?${params.toString()}`);
     return response; // dont need to parse page bc response isnt paginated
 }
+
+export const getPlayerRollingAverages = async ({ first, last , stat, games}) => {
+    // first, last, stat (PTS, REB, AST), games (# games)
+    const params = new URLSearchParams({ first, last , stat, games});
+    const response = await httpGet(`/trends/recent?${params.toString()}`);
+    return response;
+}

@@ -1,5 +1,5 @@
 import { getAllGames, getAllGamesByPlayer } from "../services/api";
-import { getPlayerAverages } from "../services/averagesApi";
+import { getPlayerAverages, getPlayerRollingAverages } from "../services/averagesApi";
 import { useEffect, useState } from "react";
 import GameLog from "../components/GameLog";
 import GameLogsTable from "../components/gameLogs/GameLogsTable";
@@ -7,6 +7,10 @@ import GameLogPaginationControls from "../components/gameLogs/GameLogPaginationC
 import PlayerAveragesTable from "../components/playerAverages/PlayerAveragesTable";
 import HeatCheck from "../components/heatCheck/heatCheck";
 import { getHeatCheck } from "../services/heatCheckApi";
+import RollingAveragesChart from "../components/playerAverages/RollingAveragesChart";
+
+import { Chart as ChartJS } from 'chart.js/auto';
+import { Line } from 'react-chartjs-2';
 
 function ApiTest() {
     const [playerGames, setPlayerGames] = useState([]); // games for player
@@ -14,6 +18,7 @@ function ApiTest() {
     const [playerGamesPageData, setPlayerGamesPageData] = useState(null); // full page data for game logs
     const [playerAverages, setPlayerAverages] = useState(null); // player averages data
     const [playerHeatCheck, setPlayerHeatCheck] = useState(null); // player heat check data
+    const [playerRollingAverages, setPlayerRollingAverages] = useState(null); // player rolling averages data
     const [error, setError] = useState(null); // each useEffect should have unique error state
     const [loading, setLoading] = useState(false); // each useEffect should have unique loading state
     const [searchInput, setSearchInput] = useState(""); // raw search query input
@@ -147,6 +152,32 @@ function ApiTest() {
         loadPlayerHeatCheck();
     }, [searchQuery])
 
+    // get player rolling averages
+    useEffect(() => {
+        if (!searchQuery) return; // dont run on startup
+
+        const loadPlayerRollingAverages = async () => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const { first, last } = searchQuery;
+                const tempStat = "PTS"; // hardcoded for now, could add dropdown to select stat
+                const tempGames = 10; // hardcoded for now, could add input to select number of games
+                const rollingAveragesResponse = await getPlayerRollingAverages({ first, last, stat: tempStat, games: tempGames });
+                setPlayerRollingAverages(rollingAveragesResponse);
+                console.log("Rolling averages response:", rollingAveragesResponse);
+            } catch (error) {
+                setError(error);
+                console.error("Error fetching player rolling averages:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadPlayerRollingAverages();
+    }, [searchQuery])
+
     return (
         <div className="api-test">
             <form onSubmit={handleSearch} className="search-form">
@@ -185,6 +216,10 @@ function ApiTest() {
                         onPrev={() => setPlayerGamesPage(prev => prev - 1)}
                     />
                 </>
+            )}
+
+            {searchQuery && playerRollingAverages && !error && !loading && (
+                <RollingAveragesChart rollingAverages={playerRollingAverages} numGames={playerRollingAverages.length} />
             )}
             
         </div>
